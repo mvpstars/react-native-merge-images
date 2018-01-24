@@ -1,0 +1,19 @@
+{
+  "name": "react-native-merge-images",
+  "version": "0.1.0",
+  "description": "Library to merge images into one",
+  "main": "src/index.js",
+  "keywords": [
+    "react-native",
+    "ios",
+    "android",
+    "image"
+  ],
+  "author": "MVP stars*",
+  "license": "MIT",
+  "peerDependencies": {
+    "react-native": ">=0.47.0",
+    "react": "*"
+  },
+  "nativePackage": true
+}
