@@ -1,4 +1,4 @@
-package com.mvpstars.RNMergeImages;
+package com.mvpstars.reactnative.mergeimages;
 
 import java.util.Arrays;
 import java.util.Collections;
