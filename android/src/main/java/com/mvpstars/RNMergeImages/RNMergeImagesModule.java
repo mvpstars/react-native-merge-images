@@ -14,6 +14,8 @@ import com.facebook.react.bridge.ReactMethod;
 import com.facebook.react.bridge.Callback;
 import com.facebook.react.bridge.ReadableArray;
 import com.facebook.react.bridge.ReadableMap;
+import com.facebook.react.bridge.WritableMap;
+import com.facebook.react.bridge.WritableNativeMap;
 
 import java.io.File;
 import java.io.FileOutputStream;
@@ -106,18 +108,24 @@ public class RNMergeImagesModule extends ReactContextBaseJavaModule {
       canvas.drawBitmap(bitmap, null, new Rect(0, 0, targetWidth, targetHeight), null);
     }
 
+    saveBitmap(mergedBitmap, jpegQuality, promise);
+  }
+
+  private void saveBitmap(Bitmap bitmap, int jpegQuality, Promise promise) {
     try {
-      final File tempFile = getTempMediaFile();
-      final FileOutputStream out = new FileOutputStream(tempFile);
-      mergedBitmap.compress(Bitmap.CompressFormat.JPEG, jpegQuality, out);
-      promise.resolve(Uri.fromFile(tempFile).toString());
+      File file = getTempMediaFile();
+      final FileOutputStream out = new FileOutputStream(file);
+      bitmap.compress(Bitmap.CompressFormat.JPEG, jpegQuality, out);
+      WritableMap response = new WritableNativeMap();
+      response.putString("path", Uri.fromFile(file).toString());
+      response.putInt("width", bitmap.getWidth());
+      response.putInt("height", bitmap.getHeight());
+      promise.resolve(response);
       out.flush();
       out.close();
     } catch (Exception e) {
       promise.reject("Failed to save image file", e);
-      return;
     }
-
   }
 
   private File getTempMediaFile() throws IOException {
