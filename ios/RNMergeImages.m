@@ -9,5 +9,12 @@
 }
 RCT_EXPORT_MODULE()
 
+RCT_EXPORT_METHOD(mergeImages:(NSDictionary *)options
+                  failureCallback:(RCTResponseErrorBlock)failureCallback
+                  successCallback:(RCTResponseSenderBlock)successCallback)
+{
+    NSURL *URL = [RCTConvert NSURL:options[@"url"]];
+    
+}
 @end
   
