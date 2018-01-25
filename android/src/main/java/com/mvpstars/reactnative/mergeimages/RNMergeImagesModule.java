@@ -31,8 +31,11 @@ public class RNMergeImagesModule extends ReactContextBaseJavaModule {
 
   private static final String TAG = "RNMergeImages";
 
-  public static final int RN_MERGE_SMALLEST = 1;
-  public static final int RN_MERGE_LARGEST = 2;
+  public static final int RN_MERGE_SIZE_SMALLEST = 1;
+  public static final int RN_MERGE_SIZE_LARGEST = 2;
+
+  public static final int RN_MERGE_TARGET_TEMP = 1;
+  public static final int RN_MERGE_TARGET_DISK = 2;
 
   private final ReactApplicationContext reactContext;
 
@@ -51,14 +54,24 @@ public class RNMergeImagesModule extends ReactContextBaseJavaModule {
   public Map<String, Object> getConstants() {
     return Collections.unmodifiableMap(new HashMap<String, Object>() {
       {
-        put("TargetSize", getTargetSizeConstants());
+        put("Size", getSizeConstants());
+        put("Target", getTargetConstants());
       }
 
-      private Map<String, Object> getTargetSizeConstants() {
+      private Map<String, Object> getSizeConstants() {
         return Collections.unmodifiableMap(new HashMap<String, Object>() {
           {
-            put("smallest", RN_MERGE_SMALLEST);
-            put("largest", RN_MERGE_LARGEST);
+            put("smallest", RN_MERGE_SIZE_SMALLEST);
+            put("largest", RN_MERGE_SIZE_LARGEST);
+          }
+        });
+      }
+
+      private Map<String, Object> getTargetConstants() {
+        return Collections.unmodifiableMap(new HashMap<String, Object>() {
+          {
+            put("temp", RN_MERGE_TARGET_TEMP);
+            put("disk", RN_MERGE_TARGET_DISK);
           }
         });
       }
@@ -67,13 +80,14 @@ public class RNMergeImagesModule extends ReactContextBaseJavaModule {
 
   @ReactMethod
   public void merge(final ReadableArray images, final ReadableMap options, final Promise promise) {
-    final int targetSize = options.hasKey("targetSize") ? options.getInt("targetSize") : RN_MERGE_SMALLEST;
+    final int size = options.hasKey("size") ? options.getInt("size") : RN_MERGE_SIZE_SMALLEST;
+    final int target = options.hasKey("target") ? options.getInt("target") : RN_MERGE_TARGET_TEMP;
     final int jpegQuality = options.hasKey("jpegQuality") ? options.getInt("jpegQuality") : 80;
     final ArrayList<Bitmap> bitmaps = new ArrayList<>(images.size());
     int targetWidth, targetHeight;
 
-    switch (targetSize) {
-      case RN_MERGE_SMALLEST:
+    switch (size) {
+      case RN_MERGE_SIZE_SMALLEST:
         targetWidth = Integer.MAX_VALUE;
         targetHeight = Integer.MAX_VALUE;
         break;
@@ -84,13 +98,13 @@ public class RNMergeImagesModule extends ReactContextBaseJavaModule {
 
     for (int i = 0, n = images.size(); i < n; i++) {
       try {
-        Bitmap b = BitmapFactory.decodeFile(images.getString(i));
+        Bitmap b = BitmapFactory.decodeFile(Uri.parse(images.getString(i)).getPath());
         if (b != null) {
           bitmaps.add(b);
-          if (targetSize == RN_MERGE_LARGEST && (b.getWidth() > targetWidth || b.getHeight() > targetHeight)) {
+          if (size == RN_MERGE_SIZE_LARGEST && (b.getWidth() > targetWidth || b.getHeight() > targetHeight)) {
             targetWidth = b.getWidth();
             targetHeight = b.getHeight();
-          } else if (targetSize == RN_MERGE_SMALLEST && (b.getWidth() < targetWidth || b.getHeight() < targetHeight)) {
+          } else if (size == RN_MERGE_SIZE_SMALLEST && (b.getWidth() < targetWidth || b.getHeight() < targetHeight)) {
             targetWidth = b.getWidth();
             targetHeight = b.getHeight();
           }
@@ -106,12 +120,19 @@ public class RNMergeImagesModule extends ReactContextBaseJavaModule {
       canvas.drawBitmap(bitmap, null, new Rect(0, 0, targetWidth, targetHeight), null);
     }
 
-    saveBitmap(mergedBitmap, jpegQuality, promise);
+    saveBitmap(mergedBitmap, target, jpegQuality, promise);
   }
 
-  private void saveBitmap(Bitmap bitmap, int jpegQuality, Promise promise) {
+  private void saveBitmap(Bitmap bitmap, int target, int jpegQuality, Promise promise) {
     try {
-      File file = getTempMediaFile();
+      File file;
+      switch (target) {
+        case RN_MERGE_TARGET_DISK:
+          file = getDiskFile();
+          break;
+        default:
+          file = getTempFile();
+      }
       final FileOutputStream out = new FileOutputStream(file);
       bitmap.compress(Bitmap.CompressFormat.JPEG, jpegQuality, out);
       WritableMap response = new WritableNativeMap();
@@ -126,12 +147,17 @@ public class RNMergeImagesModule extends ReactContextBaseJavaModule {
     }
   }
 
-  private File getTempMediaFile() throws IOException {
+  private File getDiskFile() throws IOException {
+    String timeStamp = new SimpleDateFormat("yyyyMMdd_HHmmss").format(new Date());
+    File outputDir = reactContext.getFilesDir();
+    outputDir.mkdirs();
+    return new File(outputDir, "IMG_" + timeStamp + ".jpg");
+  }
+
+  private File getTempFile() throws IOException {
     String timeStamp = new SimpleDateFormat("yyyyMMdd_HHmmss").format(new Date());
     File outputDir = reactContext.getCacheDir();
-    File outputFile;
-
-    outputFile = File.createTempFile("IMG_" + timeStamp, ".jpg", outputDir);
+    File outputFile = File.createTempFile("IMG_" + timeStamp, ".jpg", outputDir);
     return outputFile;
   }
 }
