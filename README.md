@@ -21,7 +21,7 @@
 #### Android
 
 1. Open up `android/app/src/main/java/[...]/MainApplication.java`
-  - Add `import com.mvpstars.RNMergeImagesPackage;` to the imports at the top of the file
+  - Add `import com.mvpstars.reactnative.mergeimages.RNMergeImagesPackage;` to the imports at the top of the file
   - Add `new RNMergeImagesPackage()` to the list returned by the `getPackages()` method. Add a comma to the previous item if there's already something there.
 2. Append the following lines to `android/settings.gradle`:
   	```
